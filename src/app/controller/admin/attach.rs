@@ -1,43 +1,20 @@
-use std::fs;
-use actix_web::{
-    web, 
-    Result, 
-    Error, 
-    HttpRequest,
-    HttpResponse, 
-    http::{
-        header::{
-            DispositionType,
-            DispositionParam, 
-            ContentDisposition, 
-        },
-    },
-};
 use actix_files::NamedFile;
+use actix_web::{
+    http::header::{ContentDisposition, DispositionParam, DispositionType},
+    web, Error, HttpRequest, HttpResponse, Result,
+};
+use std::fs;
 
+use crate::nako::global::{AppState, Deserialize, Serialize};
 use crate::nako::http as nako_http;
-use crate::nako::global::{
-    AppState,
-    Serialize,
-    Deserialize,
-};
 
+use crate::app::entity::attach as attach_entity;
+use crate::app::model::attach;
 use crate::app::service::http;
-use crate::app::entity::{
-    attach as attach_entity
-};
-use crate::app::model::{
-    attach,
-};
-use crate::nako::app::{
-    attach_path,
-    upload_path, 
-};
+use crate::nako::app::{attach_path, upload_path};
 
 // 首页
-pub async fn index(
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
+pub async fn index(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     let mut view = state.view.clone();
 
     let ctx = nako_http::view_data();
@@ -72,23 +49,21 @@ pub async fn list(
     let page: u64 = query.page;
     let per_page: u64 = query.limit;
 
-    let search_where = attach::AttachWhere{
+    let search_where = attach::AttachWhere {
         name: query.name.clone(),
         status: query.status,
     };
     let search_where = search_where.format();
 
-    let (list, _num_pages) = attach::AttachModel::search_in_page(
-            db, 
-            page, 
-            per_page, 
-            search_where.clone(),
-        )
-        .await.unwrap_or_default();
+    let (list, _num_pages) =
+        attach::AttachModel::search_in_page(db, page, per_page, search_where.clone())
+            .await
+            .unwrap_or_default();
     let count = attach::AttachModel::search_count(db, search_where.clone())
-        .await.unwrap_or(0);
+        .await
+        .unwrap_or(0);
 
-    let res = ListData{
+    let res = ListData {
         list: list,
         count: count,
     };
@@ -115,7 +90,10 @@ pub async fn detail(
         return Ok(http::error_admin_html(&mut view, "ID不能为空", ""));
     }
 
-    let data = attach::AttachModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = attach::AttachModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(http::error_admin_html(&mut view, "附件不存在", ""));
     }
@@ -144,7 +122,10 @@ pub async fn delete(
         return Ok(nako_http::error_response_json("ID不能为空"));
     }
 
-    let data = attach::AttachModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = attach::AttachModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(nako_http::error_response_json("要删除的附件不存在"));
     }
@@ -183,7 +164,10 @@ pub async fn download(
         return Ok(nako_http::text("ID不能为空".to_string()));
     }
 
-    let data = attach::AttachModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = attach::AttachModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(nako_http::text("附件不存在".to_string()));
     }
@@ -198,8 +182,10 @@ pub async fn download(
             disposition: DispositionType::Attachment,
             parameters: vec![DispositionParam::Filename(data.name)],
         };
-    
-        return Ok(named_file.set_content_disposition(content_disposition).into_response(&req));
+
+        return Ok(named_file
+            .set_content_disposition(content_disposition)
+            .into_response(&req));
     }
 
     return Ok(nako_http::text("文件不存在".to_string()));
@@ -224,7 +210,10 @@ pub async fn preview(
         return Ok(nako_http::text("ID不能为空".to_string()));
     }
 
-    let data = attach::AttachModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = attach::AttachModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(nako_http::text("附件不存在".to_string()));
     }

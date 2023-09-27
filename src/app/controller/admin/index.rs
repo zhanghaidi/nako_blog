@@ -1,35 +1,24 @@
-use actix_web::{
-    web, 
-    Result, 
-    Error, 
-    HttpResponse, 
-};
+use actix_web::{web, Error, HttpResponse, Result};
 
+use crate::nako::global::{AppState, Session};
 use crate::nako::http as nako_http;
-use crate::nako::global::{
-    Session, 
-    AppState,
-};
 
-use crate::app::model::{
-    user,
-    art,
-    cate,
-    comment,
-    tag,
-};
+use crate::app::model::{art, cate, comment, tag, user};
 
 // 首页
-pub async fn index(
-    state: web::Data<AppState>,
-    session: Session, 
-) -> Result<HttpResponse, Error> {
+pub async fn index(state: web::Data<AppState>, session: Session) -> Result<HttpResponse, Error> {
     let db = &state.db;
     let mut view = state.view.clone();
 
-    let id = session.get::<u32>("login_id").unwrap_or_default().unwrap_or_default();
-    let user_info = user::UserModel::find_user_by_id(db, id).await.unwrap_or_default().unwrap_or_default();
-    
+    let id = session
+        .get::<u32>("login_id")
+        .unwrap_or_default()
+        .unwrap_or_default();
+    let user_info = user::UserModel::find_user_by_id(db, id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
+
     let mut ctx = nako_http::view_data();
     ctx.insert("login_user", &user_info);
 
@@ -37,13 +26,11 @@ pub async fn index(
 }
 
 // 控制台
-pub async fn console(
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
+pub async fn console(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     let db = &state.db;
     let mut view = state.view.clone();
 
-    let search_where = art::ArtWhere{
+    let search_where = art::ArtWhere {
         title: None,
         uuid: None,
         tag: None,
@@ -52,7 +39,9 @@ pub async fn console(
         is_top: None,
         status: Some(1),
     };
-    let (new_arts, _) = art::ArtModel::search_in_page(db, 1, 6, search_where.clone()).await.unwrap_or_default();
+    let (new_arts, _) = art::ArtModel::search_in_page(db, 1, 6, search_where.clone())
+        .await
+        .unwrap_or_default();
 
     let art_count = art::ArtModel::find_count(db).await.unwrap_or(0);
     let cate_count = cate::CateModel::find_count(db).await.unwrap_or(0);

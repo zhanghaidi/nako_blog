@@ -1,30 +1,13 @@
 use actix_web::web;
 use actix_web_lab::middleware::from_fn;
 
-use crate::nako::{
-    config,
-};
+use crate::nako::config;
 
-use crate::app::middleware::{
-    admin_auth,
-};
 use crate::app::controller::admin::{
-    index,
-    auth,
-    user,
-    cate,
-    profile,
-    upload,
-    attach,
-    comment,
-    tag,
-    art,
-    page,
-    setting,
-    error,
-    guestbook,
-    friendlink,
+    art, attach, auth, cate, comment, error, friendlink, guestbook, index, page, profile, setting,
+    tag, upload, user,
 };
+use crate::app::middleware::admin_auth;
 
 pub fn route(cfg: &mut web::ServiceConfig) {
     let admin_prefix = config::section::<String>("app", "admin_prefix", "admin".to_string());
@@ -43,7 +26,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/console")
                             .route(web::get().to(index::console))
                             .name("admin.index-console"),
-                    )
+                    ),
             )
             .service(
                 // 登陆相关
@@ -63,7 +46,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/logout")
                             .route(web::get().to(auth::logout))
                             .name("admin.auth-logout"),
-                    )
+                    ),
             )
             .service(
                 // 个人信息
@@ -85,7 +68,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                             .route(web::get().to(profile::update_avatar))
                             .route(web::post().to(profile::update_avatar_save))
                             .name("admin.profile-avatar"),
-                    )
+                    ),
             )
             .service(
                 // 上传
@@ -104,7 +87,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/avatar")
                             .route(web::post().to(upload::avatar))
                             .name("admin.upload-avatar"),
-                    )
+                    ),
             )
             .service(
                 // 文章
@@ -145,7 +128,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/delete")
                             .route(web::post().to(art::delete))
                             .name("admin.art-delete"),
-                    )
+                    ),
             )
             .service(
                 // 分类
@@ -186,7 +169,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/delete")
                             .route(web::post().to(cate::delete))
                             .name("admin.cate-delete"),
-                    )
+                    ),
             )
             .service(
                 // 评论
@@ -220,7 +203,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/batch-delete")
                             .route(web::post().to(comment::batch_delete))
                             .name("admin.comment-batch-delete"),
-                    )
+                    ),
             )
             .service(
                 // 标签
@@ -261,7 +244,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/delete")
                             .route(web::post().to(tag::delete))
                             .name("admin.tag-delete"),
-                    )
+                    ),
             )
             .service(
                 // 页面
@@ -302,7 +285,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/delete")
                             .route(web::post().to(page::delete))
                             .name("admin.page-delete"),
-                    )
+                    ),
             )
             .service(
                 // 留言
@@ -336,7 +319,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/batch-delete")
                             .route(web::post().to(guestbook::batch_delete))
                             .name("admin.guestbook-batch-delete"),
-                    )
+                    ),
             )
             .service(
                 // 友情链接
@@ -377,7 +360,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/delete")
                             .route(web::post().to(friendlink::delete))
                             .name("admin.friendlink-delete"),
-                    )
+                    ),
             )
             .service(
                 // 用户
@@ -424,7 +407,7 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/delete")
                             .route(web::post().to(user::delete))
                             .name("admin.user-delete"),
-                    )
+                    ),
             )
             .service(
                 // 附件
@@ -458,17 +441,16 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                         web::resource("/preview")
                             .route(web::get().to(attach::preview))
                             .name("admin.attach-preview"),
-                    )
+                    ),
             )
             .service(
                 // 设置
-                web::scope("/setting")
-                    .service(
-                        web::resource("/index")
-                            .route(web::get().to(setting::index))
-                            .route(web::post().to(setting::setting_save))
-                            .name("admin.setting-index"),
-                    )
+                web::scope("/setting").service(
+                    web::resource("/index")
+                        .route(web::get().to(setting::index))
+                        .route(web::post().to(setting::setting_save))
+                        .name("admin.setting-index"),
+                ),
             )
             .default_service(web::to(error::index))
             .wrap(from_fn(admin_auth::auth)),

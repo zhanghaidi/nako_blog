@@ -1,33 +1,21 @@
+use actix_web::{web, Error, HttpResponse, Result};
 use std::collections::HashMap;
-use actix_web::{
-    web, 
-    Result, 
-    Error, 
-    HttpResponse, 
-};
 
+use crate::nako::global::AppState;
 use crate::nako::http as nako_http;
-use crate::nako::global::{
-    AppState,
-};
 
-use crate::app::entity::{
-    self,
-    setting as setting_entity
-};
-use crate::app::model::{
-    setting,
-};
+use crate::app::entity::{self, setting as setting_entity};
+use crate::app::model::setting;
 use crate::app::service;
 
 // 首页
-pub async fn index(
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
+pub async fn index(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     let db = &state.db;
     let mut view = state.view.clone();
 
-    let settings = setting::SettingModel::find_all(db).await.unwrap_or_default();
+    let settings = setting::SettingModel::find_all(db)
+        .await
+        .unwrap_or_default();
 
     let mut data = HashMap::new();
     if settings.len() > 0 {
@@ -35,7 +23,7 @@ pub async fn index(
             data.insert(setting.key, setting.value);
         }
     }
-    
+
     let mut ctx = nako_http::view_data();
     ctx.insert("data", &data);
 
@@ -52,11 +40,15 @@ pub async fn setting_save(
     if params.len() > 0 {
         for (k, item) in params {
             // 更新
-            let status = setting::SettingModel::update_by_key(db, k.as_str(), setting_entity::Model{
+            let status = setting::SettingModel::update_by_key(
+                db,
+                k.as_str(),
+                setting_entity::Model {
                     value: item.clone(),
                     ..entity::default()
-                })
-                .await;
+                },
+            )
+            .await;
             if status.is_err() {
                 return Ok(nako_http::error_response_json("更新失败"));
             }

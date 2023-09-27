@@ -1,23 +1,9 @@
-use actix_web::{
-    dev,
-    web, 
-    dev::ServiceRequest,
-    Error,
-    http::{
-        Method, 
-    },
-    body::{
-        BoxBody,
-    },
-};
+use actix_web::{body::BoxBody, dev, dev::ServiceRequest, http::Method, web, Error};
 use actix_web_lab::middleware::Next;
 
-use crate::nako::{
-    http as nako_http,
-    global::AppState,
-};
 use crate::app::service;
 use crate::app::service::setting;
+use crate::nako::{global::AppState, http as nako_http};
 
 //  检测网站是否开启
 pub async fn check(

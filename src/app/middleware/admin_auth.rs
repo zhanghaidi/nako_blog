@@ -1,29 +1,15 @@
-use actix_web::{
-    dev,
-    web, 
-    dev::ServiceRequest,
-    Error,
-    http::Method,
-    body::{
-        BoxBody,
-    },
-};
-use actix_web_lab::middleware::Next;
 use actix_session::SessionExt;
+use actix_web::{body::BoxBody, dev, dev::ServiceRequest, http::Method, web, Error};
+use actix_web_lab::middleware::Next;
 
+use crate::nako::global::AppState;
 use crate::nako::http;
 use crate::nako::utils;
-use crate::nako::global::{
-    AppState
-};
 
 use crate::app::service;
 
 // 过滤路由
-const IGNORE_ROUTES: [&str; 2] = [
-    "/admin/auth/captcha",
-    "/admin/auth/login",
-];
+const IGNORE_ROUTES: [&str; 2] = ["/admin/auth/captcha", "/admin/auth/login"];
 
 async fn to_next(
     req: ServiceRequest,
@@ -51,7 +37,10 @@ pub async fn auth(
 
     let session = req.get_session();
 
-    let login_id = session.get::<u32>("login_id").unwrap_or_default().unwrap_or_default();
+    let login_id = session
+        .get::<u32>("login_id")
+        .unwrap_or_default()
+        .unwrap_or_default();
     if login_id <= 0 {
         let message = "请先登陆";
 
@@ -59,14 +48,14 @@ pub async fn auth(
 
         if req.method() == Method::POST {
             let res_body_data = http::error_response_json(message);
-            
+
             return Ok(req.into_response(res_body_data));
         } else {
             let res_body_data = service::http::error_admin_html(&mut view, message, url.as_str());
-            
+
             return Ok(req.into_response(res_body_data));
         }
-    } 
+    }
 
     return to_next(req, next).await;
 }

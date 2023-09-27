@@ -1,18 +1,12 @@
 use std::error::Error;
 
 use actix_web::{
-    http::header, 
-    http::{
-        StatusCode,
-        header::ContentType, 
-    },
+    http::header,
+    http::{header::ContentType, StatusCode},
     HttpResponse,
 };
 
-use crate::nako::{
-    app,
-    global::Serialize,
-};
+use crate::nako::{app, global::Serialize};
 
 /// 状态枚举
 #[derive(Serialize)]
@@ -33,21 +27,20 @@ pub struct ResponseEntity<T> {
 // 返回文字
 pub fn text(body: String) -> HttpResponse {
     HttpResponse::build(StatusCode::OK)
-        .content_type(ContentType::plaintext())    
+        .content_type(ContentType::plaintext())
         .body(body)
 }
 
 // 返回页面
 pub fn html(body: String) -> HttpResponse {
     HttpResponse::build(StatusCode::OK)
-        .content_type(ContentType::html())    
+        .content_type(ContentType::html())
         .body(body)
 }
 
 // 返回 json
 pub fn json<T: Serialize>(res_body: T) -> HttpResponse {
-    HttpResponse::build(StatusCode::OK)
-        .json(res_body)
+    HttpResponse::build(StatusCode::OK).json(res_body)
 }
 
 // 跳转
@@ -76,7 +69,7 @@ pub fn view(view: &mut tera::Tera, name: &str, ctx: &tera::Context) -> HttpRespo
                 data.push(format!("#{}: {}", 1, e));
 
                 let mut i = 2;
-                
+
                 let mut cause = e.source();
                 while let Some(e) = cause {
                     data.push(format!("#{}: {}", i, e));
@@ -89,7 +82,7 @@ pub fn view(view: &mut tera::Tera, name: &str, ctx: &tera::Context) -> HttpRespo
             } else {
                 err
             }
-        },
+        }
     };
 
     html(res_body)

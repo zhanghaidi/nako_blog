@@ -1,11 +1,7 @@
 use std::{
-    fs, 
+    fs,
+    io::{Error, Read, Write},
     path,
-    io::{
-        Read,
-        Write,
-        Error,
-    },
 };
 
 /// 文件
@@ -13,7 +9,7 @@ pub struct File {}
 
 impl File {
     pub fn new() -> Self {
-        File{}
+        File {}
     }
 
     /// 判断是否存在
@@ -77,5 +73,4 @@ impl File {
 
         Ok(())
     }
-
 }

@@ -1,9 +1,6 @@
 use sea_orm::*;
 
-use crate::app::entity::{
-    tag, 
-    tag::Entity as Tag,
-};
+use crate::app::entity::{tag, tag::Entity as Tag};
 
 /// 条件
 #[derive(Clone)]
@@ -19,12 +16,12 @@ impl TagWhere {
         if self.name != Some("".to_string()) {
             name = self.name.clone();
         }
-    
+
         let mut status = None;
         if self.status == Some(1) || self.status == Some(0) {
             status = self.status;
         }
-    
+
         Self {
             name: name,
             status: status,
@@ -40,10 +37,7 @@ impl TagModel {
     }
 
     pub async fn find_by_name(db: &DbConn, name: &str) -> Result<Option<tag::Model>, DbErr> {
-        Tag::find()
-            .filter(tag::Column::Name.eq(name))
-            .one(db)
-            .await
+        Tag::find().filter(tag::Column::Name.eq(name)).one(db).await
     }
 
     pub async fn find_count(db: &DbConn) -> Result<u64, DbErr> {
@@ -64,10 +58,7 @@ impl TagModel {
     }
 
     // 搜索
-    pub async fn search_count(
-        db: &DbConn,
-        wheres: TagWhere,
-    ) -> Result<u64, DbErr> {
+    pub async fn search_count(db: &DbConn, wheres: TagWhere) -> Result<u64, DbErr> {
         Tag::find()
             .apply_if(wheres.name, |query, v| {
                 query.filter(tag::Column::Name.contains(format!("%{}%", v).as_str()))
@@ -100,10 +91,7 @@ impl TagModel {
     }
 
     /// 正常标签列表
-    pub async fn find_open_tags(
-        db: &DbConn,
-        per_page: u64,
-    ) -> Result<Vec<tag::Model>, DbErr> {
+    pub async fn find_open_tags(db: &DbConn, per_page: u64) -> Result<Vec<tag::Model>, DbErr> {
         Tag::find()
             .filter(tag::Column::Status.eq(1))
             .limit(per_page)
@@ -113,21 +101,18 @@ impl TagModel {
             .await
     }
 
-    pub async fn create(
-        db: &DbConn,
-        form_data: tag::Model,
-    ) -> Result<tag::ActiveModel, DbErr> {
+    pub async fn create(db: &DbConn, form_data: tag::Model) -> Result<tag::ActiveModel, DbErr> {
         tag::ActiveModel {
-                name:     Set(form_data.name.to_owned()),
-                desc:     Set(form_data.desc.to_owned()),
-                sort:     Set(form_data.sort.to_owned()),
-                status:   Set(form_data.status.to_owned()),
-                add_time: Set(form_data.add_time.to_owned()),
-                add_ip:   Set(form_data.add_ip.to_owned()),
-                ..Default::default()
-            }
-            .save(db)
-            .await
+            name: Set(form_data.name.to_owned()),
+            desc: Set(form_data.desc.to_owned()),
+            sort: Set(form_data.sort.to_owned()),
+            status: Set(form_data.status.to_owned()),
+            add_time: Set(form_data.add_time.to_owned()),
+            add_ip: Set(form_data.add_ip.to_owned()),
+            ..Default::default()
+        }
+        .save(db)
+        .await
     }
 
     pub async fn update_by_id(
@@ -142,15 +127,15 @@ impl TagModel {
             .map(Into::into)?;
 
         tag::ActiveModel {
-                id: tag.id,
-                name:   Set(form_data.name.to_owned()),
-                desc:   Set(form_data.desc.to_owned()),
-                sort:   Set(form_data.sort.to_owned()),
-                status: Set(form_data.status.to_owned()),
-                ..Default::default()
-            }
-            .update(db)
-            .await
+            id: tag.id,
+            name: Set(form_data.name.to_owned()),
+            desc: Set(form_data.desc.to_owned()),
+            sort: Set(form_data.sort.to_owned()),
+            status: Set(form_data.status.to_owned()),
+            ..Default::default()
+        }
+        .update(db)
+        .await
     }
 
     pub async fn update_status_by_id(
@@ -165,12 +150,12 @@ impl TagModel {
             .map(Into::into)?;
 
         tag::ActiveModel {
-                id: tag.id,
-                status: Set(form_data.status.to_owned()),
-                ..Default::default()
-            }
-            .update(db)
-            .await
+            id: tag.id,
+            status: Set(form_data.status.to_owned()),
+            ..Default::default()
+        }
+        .update(db)
+        .await
     }
 
     pub async fn delete(db: &DbConn, id: u32) -> Result<DeleteResult, DbErr> {
@@ -186,5 +171,4 @@ impl TagModel {
     pub async fn delete_all(db: &DbConn) -> Result<DeleteResult, DbErr> {
         Tag::delete_many().exec(db).await
     }
-
 }

@@ -1,16 +1,9 @@
 use std::fs;
 use std::path::Path;
 
-use actix_web::{
-    HttpResponse,
-};
+use actix_web::HttpResponse;
 
-use crate::nako::{
-    http,
-    embed,
-    utils,
-    config,
-};
+use crate::nako::{config, embed, http, utils};
 
 // 是否是调试模式
 pub fn is_debug() -> bool {
@@ -88,7 +81,7 @@ pub fn list_tpls_by_prefix(file_prefix: String) -> Vec<String> {
             for entry in entrys {
                 if let Ok(file_entry) = entry {
                     let file_name = file_entry.file_name().into_string().unwrap_or_default();
-        
+
                     if file_name.starts_with(&file_prefix) {
                         tpl_list.push(file_name);
                     }

@@ -1,9 +1,6 @@
 use sea_orm::*;
 
-use crate::app::entity::{
-    user, 
-    user::Entity as User,
-};
+use crate::app::entity::{user, user::Entity as User};
 
 /// 条件
 #[derive(Clone)]
@@ -20,17 +17,17 @@ impl UserWhere {
         if self.username != Some("".to_string()) {
             username = self.username.clone();
         }
-    
+
         let mut nickname = None;
         if self.nickname != Some("".to_string()) {
             nickname = self.nickname.clone();
         }
-    
+
         let mut status = None;
         if self.status == Some(1) || self.status == Some(0) {
             status = self.status;
         }
-    
+
         Self {
             username: username,
             nickname: nickname,
@@ -71,10 +68,7 @@ impl UserModel {
     }
 
     // 搜索
-    pub async fn search_count(
-        db: &DbConn,
-        wheres: UserWhere,
-    ) -> Result<u64, DbErr> {
+    pub async fn search_count(db: &DbConn, wheres: UserWhere) -> Result<u64, DbErr> {
         User::find()
             .apply_if(wheres.username, |query, v| {
                 query.filter(user::Column::Username.contains(format!("%{}%", v).as_str()))
@@ -117,16 +111,16 @@ impl UserModel {
         form_data: user::Model,
     ) -> Result<user::ActiveModel, DbErr> {
         user::ActiveModel {
-                username: Set(form_data.username.to_owned()),
-                nickname: Set(form_data.nickname.to_owned()),
-                sign:     Set(form_data.sign.to_owned()),
-                status:   Set(form_data.status.to_owned()),
-                add_time: Set(form_data.add_time.to_owned()),
-                add_ip:   Set(form_data.add_ip.to_owned()),
-                ..Default::default()
-            }
-            .save(db)
-            .await
+            username: Set(form_data.username.to_owned()),
+            nickname: Set(form_data.nickname.to_owned()),
+            sign: Set(form_data.sign.to_owned()),
+            status: Set(form_data.status.to_owned()),
+            add_time: Set(form_data.add_time.to_owned()),
+            add_ip: Set(form_data.add_ip.to_owned()),
+            ..Default::default()
+        }
+        .save(db)
+        .await
     }
 
     pub async fn update_user_by_id(
@@ -141,15 +135,15 @@ impl UserModel {
             .map(Into::into)?;
 
         user::ActiveModel {
-                id:       user.id,
-                username: Set(form_data.username.to_owned()),
-                nickname: Set(form_data.nickname.to_owned()),
-                sign:     Set(form_data.sign.to_owned()),
-                status:   Set(form_data.status.to_owned()),
-                ..Default::default()
-            }
-            .update(db)
-            .await
+            id: user.id,
+            username: Set(form_data.username.to_owned()),
+            nickname: Set(form_data.nickname.to_owned()),
+            sign: Set(form_data.sign.to_owned()),
+            status: Set(form_data.status.to_owned()),
+            ..Default::default()
+        }
+        .update(db)
+        .await
     }
 
     pub async fn update_status_by_id(
@@ -164,12 +158,12 @@ impl UserModel {
             .map(Into::into)?;
 
         user::ActiveModel {
-                id: user.id,
-                status: Set(form_data.status.to_owned()),
-                ..Default::default()
-            }
-            .update(db)
-            .await
+            id: user.id,
+            status: Set(form_data.status.to_owned()),
+            ..Default::default()
+        }
+        .update(db)
+        .await
     }
 
     pub async fn update_password_by_id(
@@ -184,12 +178,12 @@ impl UserModel {
             .map(Into::into)?;
 
         user::ActiveModel {
-                id: user.id,
-                password: Set(form_data.password.to_owned()),
-                ..Default::default()
-            }
-            .update(db)
-            .await
+            id: user.id,
+            password: Set(form_data.password.to_owned()),
+            ..Default::default()
+        }
+        .update(db)
+        .await
     }
 
     pub async fn update_avatar_by_id(
@@ -204,12 +198,12 @@ impl UserModel {
             .map(Into::into)?;
 
         user::ActiveModel {
-                id: user.id,
-                avatar: Set(form_data.avatar.to_owned()),
-                ..Default::default()
-            }
-            .update(db)
-            .await
+            id: user.id,
+            avatar: Set(form_data.avatar.to_owned()),
+            ..Default::default()
+        }
+        .update(db)
+        .await
     }
 
     pub async fn delete_user(db: &DbConn, id: u32) -> Result<DeleteResult, DbErr> {
@@ -225,5 +219,4 @@ impl UserModel {
     pub async fn delete_all_users(db: &DbConn) -> Result<DeleteResult, DbErr> {
         User::delete_many().exec(db).await
     }
-
 }

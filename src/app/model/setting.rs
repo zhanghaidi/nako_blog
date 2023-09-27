@@ -1,9 +1,6 @@
 use sea_orm::*;
 
-use crate::app::entity::{
-    setting, 
-    setting::Entity as Setting,
-};
+use crate::app::entity::{setting, setting::Entity as Setting};
 
 pub struct SettingModel;
 
@@ -15,9 +12,7 @@ impl SettingModel {
             .await
     }
 
-    pub async fn find_all(
-        db: &DbConn,
-    ) -> Result<Vec<setting::Model>, DbErr> {
+    pub async fn find_all(db: &DbConn) -> Result<Vec<setting::Model>, DbErr> {
         Setting::find()
             .order_by_asc(setting::Column::Id)
             .all(db)
@@ -29,13 +24,13 @@ impl SettingModel {
         form_data: setting::Model,
     ) -> Result<setting::ActiveModel, DbErr> {
         setting::ActiveModel {
-                key:   Set(form_data.key.to_owned()),
-                value: Set(form_data.value.to_owned()),
-                desc:  Set(form_data.desc.to_owned()),
-                ..Default::default()
-            }
-            .save(db)
-            .await
+            key: Set(form_data.key.to_owned()),
+            value: Set(form_data.value.to_owned()),
+            desc: Set(form_data.desc.to_owned()),
+            ..Default::default()
+        }
+        .save(db)
+        .await
     }
 
     pub async fn update_by_key(
@@ -51,12 +46,11 @@ impl SettingModel {
             .map(Into::into)?;
 
         setting::ActiveModel {
-                id:    setting.id,
-                value: Set(form_data.value.to_owned()),
-                ..Default::default()
-            }
-            .update(db)
-            .await
+            id: setting.id,
+            value: Set(form_data.value.to_owned()),
+            ..Default::default()
+        }
+        .update(db)
+        .await
     }
-
 }

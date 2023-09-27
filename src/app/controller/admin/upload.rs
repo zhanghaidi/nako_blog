@@ -1,49 +1,17 @@
-use std::{
-    fs, 
-    path,
-    io::Read,
-};
+use std::{fs, io::Read, path};
 
-use actix_web::{
-    web, 
-    Result, 
-    Error, 
-    HttpRequest,
-    HttpResponse, 
-};
-use actix_multipart::{
-    form::{
-        tempfile::{
-            TempFile, 
-        },
-        MultipartForm,
-    },
-};
+use actix_multipart::form::{tempfile::TempFile, MultipartForm};
+use actix_web::{web, Error, HttpRequest, HttpResponse, Result};
 use sea_orm::TryIntoModel;
 
+use crate::nako::global::{AppState, Serialize, Session};
 use crate::nako::{
-    time,
-    utils,
-    http as nako_http,
-    app::{
-        attach_path,
-        upload_path, 
-        upload_url,    
-    }
-};
-use crate::nako::global::{
-    Session, 
-    AppState,
-    Serialize,
+    app::{attach_path, upload_path, upload_url},
+    http as nako_http, time, utils,
 };
 
-use crate::app::entity::{
-    self,
-    attach as attach_entity
-};
-use crate::app::model::{
-    attach,
-};
+use crate::app::entity::{self, attach as attach_entity};
+use crate::app::model::attach;
 
 #[derive(Debug, MultipartForm)]
 pub struct UploadForm {
@@ -101,11 +69,12 @@ pub async fn file(
         let size = buffer.len() as u64;
 
         // 判断是否有相同
-        let attach_data = attach::AttachModel::find_by_md5(db, md5.as_str()).await.unwrap_or_default().unwrap_or_default();
+        let attach_data = attach::AttachModel::find_by_md5(db, md5.as_str())
+            .await
+            .unwrap_or_default()
+            .unwrap_or_default();
         if attach_data.id > 0 {
-            res.push(FileData{
-                id: attach_data.id,
-            });
+            res.push(FileData { id: attach_data.id });
 
             continue;
         }
@@ -114,23 +83,25 @@ pub async fn file(
             return Ok(nako_http::error_response_json("上传失败"));
         }
 
-        let create_data = attach::AttachModel::create(db, attach_entity::Model{
-                name:     file_name.clone(),
-                path:     name.clone(),
-                ext:      ext.clone(),
-                size:     size,
-                md5:      md5.clone(),
-                r#type:   i32::from(1),
-                status:   i32::from(1),
+        let create_data = attach::AttachModel::create(
+            db,
+            attach_entity::Model {
+                name: file_name.clone(),
+                path: name.clone(),
+                ext: ext.clone(),
+                size: size,
+                md5: md5.clone(),
+                r#type: i32::from(1),
+                status: i32::from(1),
                 add_time: add_time,
-                add_ip:   add_ip.clone(),
+                add_ip: add_ip.clone(),
                 ..entity::default()
-            }).await;
+            },
+        )
+        .await;
         if let Ok(data) = create_data {
             if let Ok(data_model) = data.try_into_model() {
-                res.push(FileData{
-                    id:  data_model.id,
-                });
+                res.push(FileData { id: data_model.id });
             }
         } else {
             if let Ok(_) = fs::remove_file(path.clone()) {}
@@ -202,10 +173,13 @@ pub async fn image(
         let size = buffer.len() as u64;
 
         // 判断是否有相同
-        let attach_data = attach::AttachModel::find_by_md5(db, md5.as_str()).await.unwrap_or_default().unwrap_or_default();
+        let attach_data = attach::AttachModel::find_by_md5(db, md5.as_str())
+            .await
+            .unwrap_or_default()
+            .unwrap_or_default();
         if attach_data.id > 0 {
-            res.push(ImageData{
-                id:  attach_data.id,
+            res.push(ImageData {
+                id: attach_data.id,
                 url: upload_url(attach_data.path),
             });
 
@@ -216,22 +190,26 @@ pub async fn image(
             return Ok(nako_http::error_response_json("上传失败"));
         }
 
-        let create_data = attach::AttachModel::create(db, attach_entity::Model{
-                name:     file_name.clone(),
-                path:     name.clone(),
-                ext:      ext.clone(),
-                size:     size,
-                md5:      md5.clone(),
-                r#type:   i32::from(2),
-                status:   i32::from(1),
+        let create_data = attach::AttachModel::create(
+            db,
+            attach_entity::Model {
+                name: file_name.clone(),
+                path: name.clone(),
+                ext: ext.clone(),
+                size: size,
+                md5: md5.clone(),
+                r#type: i32::from(2),
+                status: i32::from(1),
                 add_time: add_time,
-                add_ip:   add_ip.clone(),
+                add_ip: add_ip.clone(),
                 ..entity::default()
-            }).await;
+            },
+        )
+        .await;
         if let Ok(data) = create_data {
             if let Ok(data_model) = data.try_into_model() {
-                res.push(ImageData{
-                    id:  data_model.id,
+                res.push(ImageData {
+                    id: data_model.id,
                     url: url,
                 });
             }
@@ -259,8 +237,8 @@ pub struct AvatarForm {
 
 // 上传头像
 pub async fn avatar(
-    session: Session, 
-    form: MultipartForm<AvatarForm>
+    session: Session,
+    form: MultipartForm<AvatarForm>,
 ) -> Result<HttpResponse, Error> {
     let form = form.into_inner();
 
@@ -282,7 +260,7 @@ pub async fn avatar(
     let mut id: u32 = 0;
     if let Some(login_id) = session.get::<u32>("login_id")? {
         id = login_id;
-    } 
+    }
 
     let name = utils::sha1(id.to_string().as_str());
 
@@ -295,9 +273,7 @@ pub async fn avatar(
         return Ok(nako_http::error_response_json("上传失败"));
     }
 
-    let res = AvatarData{
-        url: url,
-    };
-    
+    let res = AvatarData { url: url };
+
     Ok(nako_http::success_response_json("上传成功", res))
 }

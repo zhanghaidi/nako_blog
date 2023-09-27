@@ -1,32 +1,14 @@
-use actix_web::{
-    web, 
-    Result, 
-    Error, 
-    HttpResponse, 
-};
+use actix_web::{web, Error, HttpResponse, Result};
 
-use crate::nako::{
-    http as nako_http,
-};
-use crate::nako::global::{
-    AppState,
-    Serialize,
-    Deserialize,
-};
+use crate::nako::global::{AppState, Deserialize, Serialize};
+use crate::nako::http as nako_http;
 
+use crate::app::entity::{self, comment as comment_entity};
+use crate::app::model::comment;
 use crate::app::service::http;
-use crate::app::entity::{
-    self,
-    comment as comment_entity
-};
-use crate::app::model::{
-    comment,
-};
 
 // 首页
-pub async fn index(
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
+pub async fn index(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     let mut view = state.view.clone();
 
     let ctx = nako_http::view_data();
@@ -64,7 +46,7 @@ pub async fn list(
     let page: u64 = query.page;
     let per_page: u64 = query.limit;
 
-    let search_where = comment::CommentWhere{
+    let search_where = comment::CommentWhere {
         art_id: query.art_id,
         username: query.username.clone(),
         email: query.email.clone(),
@@ -73,17 +55,15 @@ pub async fn list(
     };
     let search_where = search_where.format();
 
-    let (list, _num_pages) = comment::CommentModel::search_in_page(
-            db, 
-            page, 
-            per_page, 
-            search_where.clone(),
-        )
-        .await.unwrap_or_default();
+    let (list, _num_pages) =
+        comment::CommentModel::search_in_page(db, page, per_page, search_where.clone())
+            .await
+            .unwrap_or_default();
     let count = comment::CommentModel::search_count(db, search_where.clone())
-        .await.unwrap_or(0);
+        .await
+        .unwrap_or(0);
 
-    let res: ListData = ListData{
+    let res: ListData = ListData {
         list: list,
         count: count,
     };
@@ -110,7 +90,10 @@ pub async fn detail(
         return Ok(http::error_admin_html(&mut view, "ID不能为空", ""));
     }
 
-    let data = comment::CommentModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = comment::CommentModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(http::error_admin_html(&mut view, "评论不存在", ""));
     }
@@ -118,7 +101,11 @@ pub async fn detail(
     let mut ctx = nako_http::view_data();
     ctx.insert("data", &data);
 
-    Ok(nako_http::view(&mut view, "admin/comment/detail.html", &ctx))
+    Ok(nako_http::view(
+        &mut view,
+        "admin/comment/detail.html",
+        &ctx,
+    ))
 }
 
 // ==========================
@@ -139,7 +126,10 @@ pub async fn delete(
         return Ok(nako_http::error_response_json("ID不能为空"));
     }
 
-    let data = comment::CommentModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = comment::CommentModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(nako_http::error_response_json("要删除的评论不存在"));
     }
@@ -175,7 +165,10 @@ pub async fn batch_delete(
     for id in ids {
         let delete_id = id.parse::<u32>().unwrap_or_default();
 
-        let data = comment::CommentModel::find_by_id(db, delete_id).await.unwrap_or_default().unwrap_or_default();
+        let data = comment::CommentModel::find_by_id(db, delete_id)
+            .await
+            .unwrap_or_default()
+            .unwrap_or_default();
         if data.id > 0 {
             let _ = comment::CommentModel::delete(db, delete_id).await;
         }
@@ -209,25 +202,31 @@ pub async fn update_status(
         return Ok(nako_http::error_response_json("ID不能为空"));
     }
 
-    if params.status != 0 && params.status != 1  {
+    if params.status != 0 && params.status != 1 {
         return Ok(nako_http::error_response_json("状态不能为空"));
     }
 
-    let data = comment::CommentModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = comment::CommentModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(nako_http::error_response_json("要更改的评论不存在"));
     }
 
     // 更新
-    let status = comment::CommentModel::update_status_by_id(db, query.id, comment_entity::Model{
+    let status = comment::CommentModel::update_status_by_id(
+        db,
+        query.id,
+        comment_entity::Model {
             status: Some(params.status),
             ..entity::default()
-        })
-        .await;
+        },
+    )
+    .await;
     if status.is_err() {
         return Ok(nako_http::error_response_json("更新失败"));
     }
 
     Ok(nako_http::success_response_json("更新成功", ""))
 }
-

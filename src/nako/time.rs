@@ -1,17 +1,9 @@
-pub use chrono::{
-    Utc,
-    DateTime,
-    TimeZone,
-    NaiveDateTime,
-    offset::LocalResult,
-};
+pub use chrono::{offset::LocalResult, DateTime, NaiveDateTime, TimeZone, Utc};
 
 use chrono_tz::Tz;
 use chrono_tz::UTC;
 
-use crate::nako::{
-    config,
-};
+use crate::nako::config;
 
 // 时区
 pub fn timezone() -> Tz {

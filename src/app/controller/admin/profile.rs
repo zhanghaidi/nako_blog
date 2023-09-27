@@ -1,40 +1,29 @@
-use actix_web::{
-    web, 
-    Result, 
-    Error, 
-    HttpResponse, 
-};
+use actix_web::{web, Error, HttpResponse, Result};
 
-use crate::nako::{
-    auth as nako_auth,
-    http as nako_http,
-};
-use crate::nako::global::{
-    Session, 
-    AppState,
-    Deserialize,
-};
+use crate::nako::global::{AppState, Deserialize, Session};
+use crate::nako::{auth as nako_auth, http as nako_http};
 
+use crate::app::entity::{self, user as user_entity};
+use crate::app::model::user;
 use crate::app::service::http;
-use crate::app::entity::{
-    self,
-    user as user_entity
-};
-use crate::app::model::{
-    user,
-};
 
 // 更新信息
 pub async fn update_info(
     state: web::Data<AppState>,
-    session: Session, 
+    session: Session,
 ) -> Result<HttpResponse, Error> {
     let db = &state.db;
     let mut view = state.view.clone();
 
-    let id = session.get::<u32>("login_id").unwrap_or_default().unwrap_or_default();
+    let id = session
+        .get::<u32>("login_id")
+        .unwrap_or_default()
+        .unwrap_or_default();
 
-    let user_info = user::UserModel::find_user_by_id(db, id).await.unwrap_or_default().unwrap_or_default();
+    let user_info = user::UserModel::find_user_by_id(db, id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if user_info.id == 0 {
         return Ok(http::error_admin_html(&mut view, "账号不存在", ""));
     }
@@ -42,7 +31,11 @@ pub async fn update_info(
     let mut ctx = nako_http::view_data();
     ctx.insert("data", &user_info);
 
-    Ok(nako_http::view(&mut view, "admin/profile/update_info.html", &ctx))
+    Ok(nako_http::view(
+        &mut view,
+        "admin/profile/update_info.html",
+        &ctx,
+    ))
 }
 
 // 表单数据
@@ -57,7 +50,7 @@ pub struct UpdateForm {
 pub async fn update_info_save(
     state: web::Data<AppState>,
     params: web::Form<UpdateForm>,
-    session: Session, 
+    session: Session,
 ) -> Result<HttpResponse, Error> {
     let db = &state.db;
 
@@ -68,14 +61,23 @@ pub async fn update_info_save(
         return Ok(nako_http::error_response_json("昵称不能为空"));
     }
 
-    let id = session.get::<u32>("login_id").unwrap_or_default().unwrap_or_default();
+    let id = session
+        .get::<u32>("login_id")
+        .unwrap_or_default()
+        .unwrap_or_default();
 
-    let user_info = user::UserModel::find_user_by_id(db, id).await.unwrap_or_default().unwrap_or_default();
+    let user_info = user::UserModel::find_user_by_id(db, id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if user_info.id == 0 {
         return Ok(nako_http::error_response_json("账号不存在"));
     }
 
-    let user_info_by_name = user::UserModel::find_user_by_name(db, params.username.as_str()).await.unwrap_or_default().unwrap_or_default();
+    let user_info_by_name = user::UserModel::find_user_by_name(db, params.username.as_str())
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if user_info_by_name.id > 0 {
         if user_info_by_name.id != user_info.id {
             return Ok(nako_http::error_response_json("账号已经存在"));
@@ -83,14 +85,18 @@ pub async fn update_info_save(
     }
 
     // 更新
-    let user_data = user::UserModel::update_user_by_id(db, id, user_entity::Model{
+    let user_data = user::UserModel::update_user_by_id(
+        db,
+        id,
+        user_entity::Model {
             username: params.username.clone(),
             nickname: params.nickname.clone(),
-            sign:     Some(params.sign.clone()),
-            status:   Some(1),
+            sign: Some(params.sign.clone()),
+            status: Some(1),
             ..entity::default()
-        })
-        .await;
+        },
+    )
+    .await;
     if user_data.is_err() {
         return Ok(nako_http::error_response_json("更新失败"));
     }
@@ -101,14 +107,16 @@ pub async fn update_info_save(
 // ==========================
 
 // 更改密码
-pub async fn update_password(
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
+pub async fn update_password(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     let mut view = state.view.clone();
 
     let ctx = nako_http::view_data();
 
-    Ok(nako_http::view(&mut view, "admin/profile/update_password.html", &ctx))
+    Ok(nako_http::view(
+        &mut view,
+        "admin/profile/update_password.html",
+        &ctx,
+    ))
 }
 
 // 表单数据
@@ -123,7 +131,7 @@ pub struct UpdatePasswordForm {
 pub async fn update_password_save(
     state: web::Data<AppState>,
     params: web::Form<UpdatePasswordForm>,
-    session: Session, 
+    session: Session,
 ) -> Result<HttpResponse, Error> {
     let db = &state.db;
 
@@ -143,9 +151,12 @@ pub async fn update_password_save(
     let mut id: u32 = 0;
     if let Some(login_id) = session.get::<u32>("login_id")? {
         id = login_id;
-    } 
+    }
 
-    let user_info = user::UserModel::find_user_by_id(db, id).await.unwrap_or_default().unwrap_or_default();
+    let user_info = user::UserModel::find_user_by_id(db, id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if user_info.id == 0 {
         return Ok(nako_http::error_response_json("更改密码失败"));
     }
@@ -162,11 +173,15 @@ pub async fn update_password_save(
     }
 
     // 更新
-    let new_user_data = user::UserModel::update_password_by_id(db, id, user_entity::Model{
+    let new_user_data = user::UserModel::update_password_by_id(
+        db,
+        id,
+        user_entity::Model {
             password: Some(new_hashed_password.clone()),
             ..entity::default()
-        })
-        .await;
+        },
+    )
+    .await;
     if new_user_data.is_err() {
         return Ok(nako_http::error_response_json("更改密码失败"));
     }
@@ -177,14 +192,16 @@ pub async fn update_password_save(
 // ==========================
 
 // 更改头像
-pub async fn update_avatar(
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
+pub async fn update_avatar(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     let mut view = state.view.clone();
 
     let ctx = nako_http::view_data();
 
-    Ok(nako_http::view(&mut view, "admin/profile/update_avatar.html", &ctx))
+    Ok(nako_http::view(
+        &mut view,
+        "admin/profile/update_avatar.html",
+        &ctx,
+    ))
 }
 
 // 更改头像数据
@@ -197,7 +214,7 @@ pub struct UpdateAvatarForm {
 pub async fn update_avatar_save(
     state: web::Data<AppState>,
     params: web::Form<UpdateAvatarForm>,
-    session: Session, 
+    session: Session,
 ) -> Result<HttpResponse, Error> {
     let db = &state.db;
 
@@ -208,19 +225,26 @@ pub async fn update_avatar_save(
     let mut id: u32 = 0;
     if let Some(login_id) = session.get::<u32>("login_id")? {
         id = login_id;
-    } 
+    }
 
-    let user_info = user::UserModel::find_user_by_id(db, id).await.unwrap_or_default().unwrap_or_default();
+    let user_info = user::UserModel::find_user_by_id(db, id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if user_info.id == 0 {
         return Ok(nako_http::error_response_json("更改头像失败"));
     }
 
     // 更新
-    let new_user_data = user::UserModel::update_avatar_by_id(db, id, user_entity::Model{
+    let new_user_data = user::UserModel::update_avatar_by_id(
+        db,
+        id,
+        user_entity::Model {
             avatar: Some(params.avatar.clone()),
             ..entity::default()
-        })
-        .await;
+        },
+    )
+    .await;
     if new_user_data.is_err() {
         return Ok(nako_http::error_response_json("更改头像失败"));
     }

@@ -1,6 +1,6 @@
 extern crate bcrypt;
 
-use bcrypt::{DEFAULT_COST, hash, verify};
+use bcrypt::{hash, verify, DEFAULT_COST};
 
 // 加密秘密
 pub fn password_hash(password: &str) -> String {

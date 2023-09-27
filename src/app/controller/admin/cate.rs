@@ -1,36 +1,14 @@
-use actix_web::{
-    web, 
-    Result, 
-    Error, 
-    HttpRequest,
-    HttpResponse, 
-};
+use actix_web::{web, Error, HttpRequest, HttpResponse, Result};
 
-use crate::nako::{
-    app,
-    time,
-    http as nako_http,
-};
-use crate::nako::global::{
-    AppState,
-    Validate,
-    Serialize,
-    Deserialize,
-};
+use crate::nako::global::{AppState, Deserialize, Serialize, Validate};
+use crate::nako::{app, http as nako_http, time};
 
+use crate::app::entity::{self, cate as cate_entity};
+use crate::app::model::cate;
 use crate::app::service::http;
-use crate::app::entity::{
-    self,
-    cate as cate_entity
-};
-use crate::app::model::{
-    cate,
-};
 
 // 首页
-pub async fn index(
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
+pub async fn index(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     let mut view = state.view.clone();
 
     let ctx = nako_http::view_data();
@@ -66,24 +44,22 @@ pub async fn list(
     let page: u64 = query.page;
     let per_page: u64 = query.limit;
 
-    let search_where = cate::CateWhere{
+    let search_where = cate::CateWhere {
         name: query.name.clone(),
         slug: query.slug.clone(),
         status: query.status,
     };
     let search_where = search_where.format();
 
-    let (list, _num_pages) = cate::CateModel::search_in_page(
-            db, 
-            page, 
-            per_page, 
-            search_where.clone(),
-        )
-        .await.unwrap_or_default();
+    let (list, _num_pages) =
+        cate::CateModel::search_in_page(db, page, per_page, search_where.clone())
+            .await
+            .unwrap_or_default();
     let count = cate::CateModel::search_count(db, search_where.clone())
-        .await.unwrap_or(0);
+        .await
+        .unwrap_or(0);
 
-    let res = ListData{
+    let res = ListData {
         list: list,
         count: count,
     };
@@ -110,7 +86,10 @@ pub async fn detail(
         return Ok(http::error_admin_html(&mut view, "ID不能为空", ""));
     }
 
-    let data = cate::CateModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = cate::CateModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(http::error_admin_html(&mut view, "分类不存在", ""));
     }
@@ -124,9 +103,7 @@ pub async fn detail(
 // ==========================
 
 // 添加
-pub async fn create(
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
+pub async fn create(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     let mut view = state.view.clone();
 
     let ctx = nako_http::view_data();
@@ -156,11 +133,14 @@ pub async fn create_save(
     if params.slug.as_str() == "" {
         return Ok(nako_http::error_response_json("标识不能为空"));
     }
-    if params.status != 0 && params.status != 1  {
+    if params.status != 0 && params.status != 1 {
         return Ok(nako_http::error_response_json("状态不能为空"));
     }
 
-    let data = cate::CateModel::find_by_slug(db, params.slug.as_str()).await.unwrap_or_default().unwrap_or_default();
+    let data = cate::CateModel::find_by_slug(db, params.slug.as_str())
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id > 0 {
         return Ok(nako_http::error_response_json("分类标识已经存在"));
     }
@@ -172,18 +152,22 @@ pub async fn create_save(
         ip = val.ip().to_string();
     }
 
-    let create_data = cate::CateModel::create(db, cate_entity::Model{
-            pid:      0,
-            name:     params.name.clone(),
-            slug:     params.slug.clone(),
-            sort:     100,
+    let create_data = cate::CateModel::create(
+        db,
+        cate_entity::Model {
+            pid: 0,
+            name: params.name.clone(),
+            slug: params.slug.clone(),
+            sort: 100,
             list_tpl: "".to_string(),
             view_tpl: "".to_string(),
-            status:   Some(params.status),
+            status: Some(params.status),
             add_time: Some(add_time),
-            add_ip:   Some(ip.clone()),
+            add_ip: Some(ip.clone()),
             ..entity::default()
-        }).await;
+        },
+    )
+    .await;
     if create_data.is_ok() {
         return Ok(nako_http::success_response_json("添加成功", ""));
     }
@@ -210,7 +194,10 @@ pub async fn update(
         return Ok(http::error_admin_html(&mut view, "ID不能为空", ""));
     }
 
-    let info = cate::CateModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let info = cate::CateModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if info.id == 0 {
         return Ok(http::error_admin_html(&mut view, "分类不存在", ""));
     }
@@ -270,7 +257,7 @@ pub async fn update_save(
         return Ok(nako_http::error_response_json("ID不能为空"));
     }
 
-    let vali_data = UpdateValidate{
+    let vali_data = UpdateValidate {
         pid: Some(params.pid.clone()),
         name: Some(params.name.clone()),
         slug: Some(params.slug.clone()),
@@ -282,17 +269,25 @@ pub async fn update_save(
 
     let vali = vali_data.validate();
     if vali.is_err() {
-        return Ok(nako_http::error_response_json(format!("{}", vali.unwrap_err()).as_str()));
+        return Ok(nako_http::error_response_json(
+            format!("{}", vali.unwrap_err()).as_str(),
+        ));
     }
 
     let db = &state.db;
 
-    let info = cate::CateModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let info = cate::CateModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if info.id == 0 {
         return Ok(nako_http::error_response_json("要更改的分类不存在"));
     }
 
-    let info_by_name = cate::CateModel::find_by_slug(db, params.slug.as_str()).await.unwrap_or_default().unwrap_or_default();
+    let info_by_name = cate::CateModel::find_by_slug(db, params.slug.as_str())
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if info_by_name.id > 0 {
         if info.id != info_by_name.id {
             return Ok(nako_http::error_response_json("分类标识已经存在"));
@@ -300,18 +295,22 @@ pub async fn update_save(
     }
 
     // 更新
-    let data = cate::CateModel::update_by_id(db, query.id, cate_entity::Model{
-            pid:      params.pid,
-            name:     params.name.clone(),
-            slug:     params.slug.clone(),
-            desc:     Some(params.desc.clone()),
-            sort:     params.sort,
+    let data = cate::CateModel::update_by_id(
+        db,
+        query.id,
+        cate_entity::Model {
+            pid: params.pid,
+            name: params.name.clone(),
+            slug: params.slug.clone(),
+            desc: Some(params.desc.clone()),
+            sort: params.sort,
             list_tpl: params.list_tpl.clone(),
             view_tpl: params.view_tpl.clone(),
-            status:   Some(params.status),
+            status: Some(params.status),
             ..entity::default()
-        })
-        .await;
+        },
+    )
+    .await;
     if data.is_err() {
         return Ok(nako_http::error_response_json("更新失败"));
     }
@@ -337,7 +336,10 @@ pub async fn delete(
         return Ok(nako_http::error_response_json("ID不能为空"));
     }
 
-    let data = cate::CateModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = cate::CateModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(nako_http::error_response_json("要删除的分类不存在"));
     }
@@ -375,25 +377,31 @@ pub async fn update_status(
         return Ok(nako_http::error_response_json("ID不能为空"));
     }
 
-    if params.status != 0 && params.status != 1  {
+    if params.status != 0 && params.status != 1 {
         return Ok(nako_http::error_response_json("状态不能为空"));
     }
 
-    let data = cate::CateModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = cate::CateModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(nako_http::error_response_json("要更改的分类不存在"));
     }
 
     // 更新
-    let status = cate::CateModel::update_status_by_id(db, query.id, cate_entity::Model{
+    let status = cate::CateModel::update_status_by_id(
+        db,
+        query.id,
+        cate_entity::Model {
             status: Some(params.status),
             ..entity::default()
-        })
-        .await;
+        },
+    )
+    .await;
     if status.is_err() {
         return Ok(nako_http::error_response_json("更新失败"));
     }
 
     Ok(nako_http::success_response_json("更新成功", ""))
 }
-

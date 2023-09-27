@@ -1,16 +1,12 @@
 use ini::Ini;
+use once_cell::sync::Lazy;
 use std::path;
 use std::str::FromStr;
 use std::sync::Mutex;
-use once_cell::sync::Lazy;
 
-use crate::nako::{
-    embed,
-};
+use crate::nako::embed;
 
-static GLOBAL_CONF_FILE: Lazy<Mutex<String>> = Lazy::new(|| {
-    Mutex::new(String::from("conf.ini"))
-});
+static GLOBAL_CONF_FILE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::from("conf.ini")));
 
 static GLOBAL_CONF: Lazy<Ini> = Lazy::new(|| {
     if let Ok(v) = GLOBAL_CONF_FILE.lock() {
@@ -44,19 +40,17 @@ pub fn load_from_file(file: &str) -> Ini {
 }
 
 // env
-pub fn section<B: FromStr>(section: &str, key: &str, def_val: B) -> B 
-    where <B as FromStr>::Err: std::fmt::Debug
+pub fn section<B: FromStr>(section: &str, key: &str, def_val: B) -> B
+where
+    <B as FromStr>::Err: std::fmt::Debug,
 {
     let ini = &GLOBAL_CONF;
 
-    match ini.get_from(Some(section), key){
-        Some(data) => {
-            match data.parse::<B>() {
-                Ok(v) => v,
-                Err(_) => def_val,
-            }
+    match ini.get_from(Some(section), key) {
+        Some(data) => match data.parse::<B>() {
+            Ok(v) => v,
+            Err(_) => def_val,
         },
         _ => def_val,
     }
 }
-

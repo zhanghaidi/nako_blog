@@ -1,10 +1,7 @@
 use rsa::{
-    Result, 
-    Pkcs1v15Encrypt, 
     pkcs8::LineEnding,
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
-    RsaPrivateKey, 
-    RsaPublicKey,
+    Pkcs1v15Encrypt, Result, RsaPrivateKey, RsaPublicKey,
 };
 
 // 生成证书
@@ -19,7 +16,7 @@ pub fn generate_key(bits: usize) -> Result<(String, String)> {
         Ok(v) => v,
         Err(_) => "".into(),
     };
-    
+
     Ok((priv_pem.to_string(), pub_pem.to_string()))
 }
 
@@ -29,7 +26,7 @@ pub fn encrypt(pubkey: &str, data: &[u8]) -> Result<Vec<u8>> {
 
     if let Ok(pub_key) = RsaPublicKey::from_public_key_pem(pubkey) {
         let enc_data = pub_key.encrypt(&mut rng, Pkcs1v15Encrypt, &data[..])?;
-    
+
         return Ok(enc_data);
     };
 

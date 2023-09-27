@@ -1,40 +1,18 @@
-use actix_web::{
-    web, 
-    Result, 
-    Error, 
-    HttpRequest,
-    HttpResponse, 
-};
+use actix_web::{web, Error, HttpRequest, HttpResponse, Result};
 
-use crate::nako::{
-    time,
-    utils,
-    http as nako_http,
-};
-use crate::nako::global::{
-    Session, 
-    AppState,
-    Validate,
-    Serialize,
-    Deserialize,
-};
+use crate::nako::global::{AppState, Deserialize, Serialize, Session, Validate};
+use crate::nako::{http as nako_http, time, utils};
 
-use crate::app::service::http;
 use crate::app::entity::{
     self,
     art as art_entity,
     // cate as cate_entity,
 };
-use crate::app::model::{
-    art,
-    cate,
-    user,
-};
+use crate::app::model::{art, cate, user};
+use crate::app::service::http;
 
 // 首页
-pub async fn index(
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
+pub async fn index(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     let mut view = state.view.clone();
 
     let ctx = nako_http::view_data();
@@ -71,7 +49,7 @@ pub async fn list(
     let page: u64 = query.page;
     let per_page: u64 = query.limit;
 
-    let search_where = art::ArtWhere{
+    let search_where = art::ArtWhere {
         title: query.title.clone(),
         uuid: query.uuid.clone(),
         tag: None,
@@ -82,17 +60,15 @@ pub async fn list(
     };
     let search_where = search_where.format();
 
-    let (list, _num_pages) = art::ArtModel::search_in_page(
-            db, 
-            page, 
-            per_page, 
-            search_where.clone(),
-        )
-        .await.unwrap_or_default();
+    let (list, _num_pages) =
+        art::ArtModel::search_in_page(db, page, per_page, search_where.clone())
+            .await
+            .unwrap_or_default();
     let count = art::ArtModel::search_count(db, search_where.clone())
-        .await.unwrap_or(0);
+        .await
+        .unwrap_or(0);
 
-    let res: ListData = ListData{
+    let res: ListData = ListData {
         list: list,
         count: count,
     };
@@ -119,16 +95,25 @@ pub async fn detail(
         return Ok(http::error_admin_html(&mut view, "ID不能为空", ""));
     }
 
-    let data = art::ArtModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = art::ArtModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(http::error_admin_html(&mut view, "文章不存在", ""));
     }
 
     // 分类
-    let cate_data = cate::CateModel::find_by_id(db, data.cate_id).await.unwrap_or_default().unwrap_or_default();
+    let cate_data = cate::CateModel::find_by_id(db, data.cate_id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
 
     // 作者
-    let user_data = user::UserModel::find_user_by_id(db, data.user_id).await.unwrap_or_default().unwrap_or_default();
+    let user_data = user::UserModel::find_user_by_id(db, data.user_id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
 
     let mut ctx = nako_http::view_data();
     ctx.insert("data", &data);
@@ -141,9 +126,7 @@ pub async fn detail(
 // ==========================
 
 // 添加
-pub async fn create(
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
+pub async fn create(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     let db = &state.db;
     let mut view = state.view.clone();
 
@@ -166,7 +149,7 @@ pub struct CreateForm {
 // 添加保存
 pub async fn create_save(
     req: HttpRequest,
-    session: Session, 
+    session: Session,
     state: web::Data<AppState>,
     params: web::Form<CreateForm>,
 ) -> Result<HttpResponse, Error> {
@@ -178,7 +161,7 @@ pub async fn create_save(
     if params.title.as_str() == "" {
         return Ok(nako_http::error_response_json("文章不能为空"));
     }
-    if params.status != 0 && params.status != 1  {
+    if params.status != 0 && params.status != 1 {
         return Ok(nako_http::error_response_json("状态不能为空"));
     }
 
@@ -189,25 +172,32 @@ pub async fn create_save(
         ip = val.ip().to_string();
     }
 
-    let user_id = session.get::<u32>("login_id").unwrap_or_default().unwrap_or_default();
+    let user_id = session
+        .get::<u32>("login_id")
+        .unwrap_or_default()
+        .unwrap_or_default();
 
-    let create_data = art::ArtModel::create(db, art_entity::Model{
-            uuid:     utils::uuid(),
-            cate_id:  params.cate_id,
-            user_id:  user_id,
-            title:    params.title.clone(),
-            content:  "".to_string(),
-            views:    Some(0),
-            status:   Some(params.status),
+    let create_data = art::ArtModel::create(
+        db,
+        art_entity::Model {
+            uuid: utils::uuid(),
+            cate_id: params.cate_id,
+            user_id: user_id,
+            title: params.title.clone(),
+            content: "".to_string(),
+            views: Some(0),
+            status: Some(params.status),
             add_time: Some(add_time),
-            add_ip:   Some(ip.clone()),
+            add_ip: Some(ip.clone()),
             ..entity::default()
-        }).await;
+        },
+    )
+    .await;
     if !create_data.is_ok() {
         return Ok(nako_http::error_response_json("添加失败"));
     }
 
-    Ok(nako_http::success_response_json("添加成功", "")) 
+    Ok(nako_http::success_response_json("添加成功", ""))
 }
 
 // ==========================
@@ -229,7 +219,10 @@ pub async fn update(
         return Ok(http::error_admin_html(&mut view, "ID不能为空", ""));
     }
 
-    let info = art::ArtModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let info = art::ArtModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if info.id == 0 {
         return Ok(http::error_admin_html(&mut view, "文章不存在", ""));
     }
@@ -286,7 +279,7 @@ pub async fn update_save(
         return Ok(nako_http::error_response_json("ID不能为空"));
     }
 
-    let vali_data = UpdateValidate{
+    let vali_data = UpdateValidate {
         cate_id: Some(params.cate_id.clone()),
         title: Some(params.title.clone()),
         content: Some(params.content.clone()),
@@ -297,12 +290,17 @@ pub async fn update_save(
 
     let vali = vali_data.validate();
     if vali.is_err() {
-        return Ok(nako_http::error_response_json(format!("{}", vali.unwrap_err()).as_str()));
+        return Ok(nako_http::error_response_json(
+            format!("{}", vali.unwrap_err()).as_str(),
+        ));
     }
 
     let db = &state.db;
 
-    let info = art::ArtModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let info = art::ArtModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if info.id == 0 {
         return Ok(nako_http::error_response_json("要更改的文章不存在"));
     }
@@ -310,22 +308,26 @@ pub async fn update_save(
     let add_time = time::parse(params.add_time.as_str()).timestamp();
 
     // 更新
-    let data = art::ArtModel::update_by_id(db, query.id, art_entity::Model{
-            cate_id:     params.cate_id,
-            title:       params.title.clone(),
-            keywords:    Some(params.keywords.clone()),
+    let data = art::ArtModel::update_by_id(
+        db,
+        query.id,
+        art_entity::Model {
+            cate_id: params.cate_id,
+            title: params.title.clone(),
+            keywords: Some(params.keywords.clone()),
             description: Some(params.description.clone()),
-            cover:       Some(params.cover.clone()),
-            content:     params.content.clone(),
-            brief:       Some(params.brief.clone()),
-            tags:        Some(params.tags.clone()),
-            from:        Some(params.from.clone()),
-            is_top:      Some(params.is_top),
-            status:      Some(params.status),
-            add_time:    Some(add_time),
+            cover: Some(params.cover.clone()),
+            content: params.content.clone(),
+            brief: Some(params.brief.clone()),
+            tags: Some(params.tags.clone()),
+            from: Some(params.from.clone()),
+            is_top: Some(params.is_top),
+            status: Some(params.status),
+            add_time: Some(add_time),
             ..entity::default()
-        })
-        .await;
+        },
+    )
+    .await;
     if data.is_err() {
         return Ok(nako_http::error_response_json("更新失败"));
     }
@@ -351,7 +353,10 @@ pub async fn delete(
         return Ok(nako_http::error_response_json("ID不能为空"));
     }
 
-    let data = art::ArtModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = art::ArtModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(nako_http::error_response_json("要删除的文章不存在"));
     }
@@ -389,25 +394,31 @@ pub async fn update_status(
         return Ok(nako_http::error_response_json("ID不能为空"));
     }
 
-    if params.status != 0 && params.status != 1  {
+    if params.status != 0 && params.status != 1 {
         return Ok(nako_http::error_response_json("状态不能为空"));
     }
 
-    let data = art::ArtModel::find_by_id(db, query.id).await.unwrap_or_default().unwrap_or_default();
+    let data = art::ArtModel::find_by_id(db, query.id)
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if data.id == 0 {
         return Ok(nako_http::error_response_json("要更改的文章不存在"));
     }
 
     // 更新
-    let status = art::ArtModel::update_status_by_id(db, query.id, art_entity::Model{
+    let status = art::ArtModel::update_status_by_id(
+        db,
+        query.id,
+        art_entity::Model {
             status: Some(params.status),
             ..entity::default()
-        })
-        .await;
+        },
+    )
+    .await;
     if status.is_err() {
         return Ok(nako_http::error_response_json("更新失败"));
     }
 
     Ok(nako_http::success_response_json("更新成功", ""))
 }
-

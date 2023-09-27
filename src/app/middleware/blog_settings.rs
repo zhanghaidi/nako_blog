@@ -1,18 +1,7 @@
-use actix_web::{
-    dev,
-    web, 
-    dev::ServiceRequest,
-    Error,
-    body::{
-        BoxBody,
-    },
-};
+use actix_web::{body::BoxBody, dev, dev::ServiceRequest, web, Error};
 use actix_web_lab::middleware::Next;
 
-use crate::nako::{
-    global::AppState,
-    view as nako_view,
-};
+use crate::nako::{global::AppState, view as nako_view};
 
 use crate::app::service::setting;
 

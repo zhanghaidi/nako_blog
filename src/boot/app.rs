@@ -1,50 +1,20 @@
-use actix_web::{
-    web, 
-    App, 
-    Error,
-    Result,
-    HttpServer,
-    dev::Service,
-    http::{
-        StatusCode,
-    },
-    cookie::{
-        Key,
-        time,
-    },
-    middleware::{
-        Logger,
-        ErrorHandlers,
-    },
-    HttpResponse,
-};
-use actix_session::{
-    SessionMiddleware,
-    storage::RedisSessionStore, 
-    config::PersistentSession,
-};
 use actix_files::Files as Fs;
+use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
+use actix_web::{
+    cookie::{time, Key},
+    dev::Service,
+    http::StatusCode,
+    middleware::{ErrorHandlers, Logger},
+    web, App, Error, HttpResponse, HttpServer, Result,
+};
 
-use tera::Tera;
-use mime_guess::from_path;
 use listenfd::ListenFd;
+use mime_guess::from_path;
+use tera::Tera;
 
-use crate::nako::{
-    db, 
-    embed,
-    config,
-    redis,
-    view as nako_view,
-    log as nako_log,
-    global::AppState,
-};
-use crate::boot::{
-    error,
-};
-use crate::route::{
-    admin,
-    blog,
-};
+use crate::boot::error;
+use crate::nako::{config, db, embed, global::AppState, log as nako_log, redis, view as nako_view};
+use crate::route::{admin, blog};
 
 // app 运行
 pub async fn start() -> std::io::Result<()> {
@@ -57,7 +27,7 @@ pub async fn start() -> std::io::Result<()> {
     // 日志
     let logger = nako_log::setup_logger();
     match logger {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(err) => log::error!("set log err: {err}"),
     }
 
@@ -68,7 +38,7 @@ pub async fn start() -> std::io::Result<()> {
     let conn = db::connect().await.unwrap_or_default();
 
     let mut view: Tera;
- 
+
     // 是否打包
     let is_embed = config::section::<bool>("app", "is_embed", true);
     if is_embed {
@@ -76,10 +46,18 @@ pub async fn start() -> std::io::Result<()> {
 
         for file in embed::Templates::iter() {
             let filename = file.as_ref();
-            view.add_raw_template(filename.clone(), embed::get_tpl_data(filename.clone()).as_str()).unwrap_or_default();
+            view.add_raw_template(
+                filename.clone(),
+                embed::get_tpl_data(filename.clone()).as_str(),
+            )
+            .unwrap_or_default();
         }
     } else {
-        view = Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/assert/templates/**/*")).unwrap_or_default();
+        view = Tera::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/assert/templates/**/*"
+        ))
+        .unwrap_or_default();
     }
 
     // 设置模板函数
@@ -88,37 +66,32 @@ pub async fn start() -> std::io::Result<()> {
     let redis_url = config::section::<String>("redis", "url", "8080".to_string());
     let redis = redis::create_redis_pool(redis_url).await.unwrap();
 
-    let state = AppState { 
-        db: conn, 
-        view: view, 
-        redis: redis, 
+    let state = AppState {
+        db: conn,
+        view: view,
+        redis: redis,
     };
 
-    let session_redis_url = config::section::<String>("session", "redis_url", "redis://127.0.0.1:6379".to_string());
-    let redis_store = RedisSessionStore::new(session_redis_url.clone()).await.unwrap();
+    let session_redis_url =
+        config::section::<String>("session", "redis_url", "redis://127.0.0.1:6379".to_string());
+    let redis_store = RedisSessionStore::new(session_redis_url.clone())
+        .await
+        .unwrap();
 
     let mut listenfd = ListenFd::from_env();
     let mut server = HttpServer::new(move || {
         App::new()
-            .wrap(
-                ErrorHandlers::new().handler(StatusCode::NOT_FOUND, error::not_found)
-            )
+            .wrap(ErrorHandlers::new().handler(StatusCode::NOT_FOUND, error::not_found))
             .wrap(Logger::default())
             .wrap(
-                SessionMiddleware::builder(
-                    redis_store.clone(),
-                    Key::from(&[0;64]),
-                )
-                .cookie_secure(false)
-                .session_lifecycle(
-                    PersistentSession::default()
-                        .session_ttl(time::Duration::days(5))
-                )
-                .build(),
+                SessionMiddleware::builder(redis_store.clone(), Key::from(&[0; 64]))
+                    .cookie_secure(false)
+                    .session_lifecycle(
+                        PersistentSession::default().session_ttl(time::Duration::days(5)),
+                    )
+                    .build(),
             )
-            .app_data(
-                web::Data::new(state.clone()),
-            )
+            .app_data(web::Data::new(state.clone()))
             .app_data(
                 web::FormConfig::default()
                     .error_handler(error::form_parser_error)
@@ -143,7 +116,7 @@ pub async fn start() -> std::io::Result<()> {
                 nako_view::ROUTES_KEY.with(|routes| {
                     routes.borrow_mut().replace(req.resource_map().clone());
                 });
-                
+
                 srv.call(req)
             })
             .service(Fs::new("/upload", "./storage/upload"))
@@ -170,9 +143,7 @@ pub async fn start() -> std::io::Result<()> {
 
 /// 静态资源
 #[actix_web::get("/static/{_:.*}")]
-async fn handle_embedded_static(
-    path: web::Path<String>,
-) -> Result<HttpResponse, Error> {
+async fn handle_embedded_static(path: web::Path<String>) -> Result<HttpResponse, Error> {
     let path = path.as_str();
 
     match embed::Static::get(path) {

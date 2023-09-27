@@ -1,11 +1,5 @@
-use serde::{
-    Serialize, 
-    Deserialize,
-};
-use url::{
-    Url,
-    ParseError,
-};
+use serde::{Deserialize, Serialize};
+use url::{ParseError, Url};
 
 #[derive(Serialize, Deserialize)]
 pub struct Pagination {
@@ -107,12 +101,16 @@ impl Pagination {
         }
     }
 
-    fn build_page_number_links(&self, base_url: &Url, current_page: usize, total_pages: usize) -> String {
+    fn build_page_number_links(
+        &self,
+        base_url: &Url,
+        current_page: usize,
+        total_pages: usize,
+    ) -> String {
         let mut links = Vec::new();
 
-        for i in (1 as i64).max(current_page as i64 - 4) as usize..=(total_pages as i64)
-            .min(current_page as i64 + 4)
-            as usize
+        for i in (1 as i64).max(current_page as i64 - 4) as usize
+            ..=(total_pages as i64).min(current_page as i64 + 4) as usize
         {
             let page_url = self.build_page_url(&base_url, i);
             if i == current_page {
@@ -127,7 +125,9 @@ impl Pagination {
 
     fn build_page_url(&self, url_builder: &Url, page: usize) -> String {
         let mut url_builder = url_builder.clone();
-        url_builder.query_pairs_mut().append_pair("page", &page.to_string());
+        url_builder
+            .query_pairs_mut()
+            .append_pair("page", &page.to_string());
         url_builder.to_string()
     }
 
@@ -157,5 +157,3 @@ impl Pagination {
         )
     }
 }
-
-

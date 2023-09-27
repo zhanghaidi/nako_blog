@@ -1,12 +1,7 @@
 use std::collections::HashMap;
 
-use crate::nako::{
-    redis,
-    global::AppState,
-};
-use crate::app::model::{
-    setting,
-};
+use crate::app::model::setting;
+use crate::nako::{global::AppState, redis};
 
 // 全部设置
 pub async fn settings(state: &mut AppState) -> HashMap<String, String> {
@@ -22,7 +17,9 @@ pub async fn settings(state: &mut AppState) -> HashMap<String, String> {
         };
     }
 
-    let settings = setting::SettingModel::find_all(db).await.unwrap_or_default();
+    let settings = setting::SettingModel::find_all(db)
+        .await
+        .unwrap_or_default();
 
     let mut data = HashMap::new();
     if settings.len() > 0 {
@@ -31,7 +28,7 @@ pub async fn settings(state: &mut AppState) -> HashMap<String, String> {
         }
     }
 
-    let _ = redis::set::<HashMap<String, String>>(r, setting_key, data.clone(), 60*60*24*2);
+    let _ = redis::set::<HashMap<String, String>>(r, setting_key, data.clone(), 60 * 60 * 24 * 2);
 
     data
 }

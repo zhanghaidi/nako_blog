@@ -1,9 +1,6 @@
 use sea_orm::*;
 
-use crate::app::entity::{
-    guestbook, 
-    guestbook::Entity as Guestbook,
-};
+use crate::app::entity::{guestbook, guestbook::Entity as Guestbook};
 
 /// 条件
 #[derive(Clone)]
@@ -24,27 +21,27 @@ impl GuestbookWhere {
         if self.name != Some("".to_string()) {
             name = self.name.clone();
         }
-    
+
         let mut message = None;
         if self.message != Some("".to_string()) {
             message = self.message.clone();
         }
-       
+
         let mut phone = None;
         if self.phone != Some("".to_string()) {
             phone = self.phone.clone();
         }
-            
+
         let mut email = None;
         if self.email != Some("".to_string()) {
             email = self.email.clone();
         }
-            
+
         let mut qq = None;
         if self.qq != Some("".to_string()) {
             qq = self.qq.clone();
         }
-            
+
         let mut weixin = None;
         if self.weixin != Some("".to_string()) {
             weixin = self.weixin.clone();
@@ -54,7 +51,7 @@ impl GuestbookWhere {
         if self.status == Some(1) || self.status == Some(0) {
             status = self.status;
         }
-    
+
         Self {
             name: name,
             message: message,
@@ -92,10 +89,7 @@ impl GuestbookModel {
     }
 
     // 搜索
-    pub async fn search_count(
-        db: &DbConn,
-        wheres: GuestbookWhere,
-    ) -> Result<u64, DbErr> {
+    pub async fn search_count(db: &DbConn, wheres: GuestbookWhere) -> Result<u64, DbErr> {
         Guestbook::find()
             .apply_if(wheres.name, |query, v| {
                 query.filter(guestbook::Column::Name.contains(format!("%{}%", v).as_str()))
@@ -162,19 +156,19 @@ impl GuestbookModel {
         form_data: guestbook::Model,
     ) -> Result<guestbook::ActiveModel, DbErr> {
         guestbook::ActiveModel {
-                name:     Set(form_data.name.to_owned()),
-                message:  Set(form_data.message.to_owned()),
-                phone:    Set(form_data.phone.to_owned()),
-                email:    Set(form_data.email.to_owned()),
-                qq:       Set(form_data.qq.to_owned()),
-                weixin:   Set(form_data.weixin.to_owned()),
-                status:   Set(form_data.status.to_owned()),
-                add_time: Set(form_data.add_time.to_owned()),
-                add_ip:   Set(form_data.add_ip.to_owned()),
-                ..Default::default()
-            }
-            .save(db)
-            .await
+            name: Set(form_data.name.to_owned()),
+            message: Set(form_data.message.to_owned()),
+            phone: Set(form_data.phone.to_owned()),
+            email: Set(form_data.email.to_owned()),
+            qq: Set(form_data.qq.to_owned()),
+            weixin: Set(form_data.weixin.to_owned()),
+            status: Set(form_data.status.to_owned()),
+            add_time: Set(form_data.add_time.to_owned()),
+            add_ip: Set(form_data.add_ip.to_owned()),
+            ..Default::default()
+        }
+        .save(db)
+        .await
     }
 
     pub async fn update_status_by_id(
@@ -189,12 +183,12 @@ impl GuestbookModel {
             .map(Into::into)?;
 
         guestbook::ActiveModel {
-                id: guestbook.id,
-                status: Set(form_data.status.to_owned()),
-                ..Default::default()
-            }
-            .update(db)
-            .await
+            id: guestbook.id,
+            status: Set(form_data.status.to_owned()),
+            ..Default::default()
+        }
+        .update(db)
+        .await
     }
 
     pub async fn delete(db: &DbConn, id: u32) -> Result<DeleteResult, DbErr> {
@@ -210,5 +204,4 @@ impl GuestbookModel {
     pub async fn delete_all(db: &DbConn) -> Result<DeleteResult, DbErr> {
         Guestbook::delete_many().exec(db).await
     }
-
 }

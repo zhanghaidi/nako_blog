@@ -1,13 +1,8 @@
-use actix_web::{
-    HttpResponse,
-};
+use actix_web::HttpResponse;
 
 use crate::nako::{
     app,
-    http::{
-        view,
-        view_data,
-    },
+    http::{view, view_data},
 };
 
 // 返回失败页面
@@ -37,4 +32,3 @@ pub fn error_blog_html(t: &mut tera::Tera, message: &str, url: &str) -> HttpResp
 
     view(t, app::view_path("error.html").as_str(), &ctx)
 }
-

@@ -1,5 +1,5 @@
 use redis::aio::ConnectionManager;
-use redis::{cmd, RedisResult, FromRedisValue, ToRedisArgs};
+use redis::{cmd, FromRedisValue, RedisResult, ToRedisArgs};
 
 /// let mut redis_pool = create_redis_pool().await;
 pub async fn create_redis_pool(redis_url: String) -> RedisResult<ConnectionManager> {
@@ -15,11 +15,14 @@ pub async fn keys(redis: &mut ConnectionManager, key_pattern: &str) -> RedisResu
         .await?)
 }
 
-pub async fn delete(redis: &mut ConnectionManager, keys_to_delete: Vec<String>) -> RedisResult<u64> {
+pub async fn delete(
+    redis: &mut ConnectionManager,
+    keys_to_delete: Vec<String>,
+) -> RedisResult<u64> {
     if keys_to_delete.is_empty() {
         return Ok(0);
     }
-    
+
     let mut del = cmd("DEL");
     for key in keys_to_delete {
         del.arg(key);
@@ -47,7 +50,10 @@ pub async fn set<T: ToRedisArgs>(
     Ok(())
 }
 
-pub async fn get<T: FromRedisValue>(redis: &mut ConnectionManager, cache_key: &str) -> RedisResult<Option<T>> {
+pub async fn get<T: FromRedisValue>(
+    redis: &mut ConnectionManager,
+    cache_key: &str,
+) -> RedisResult<Option<T>> {
     Ok(cmd("GET")
         .arg(cache_key)
         .query_async::<_, Option<T>>(redis)

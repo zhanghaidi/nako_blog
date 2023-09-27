@@ -1,18 +1,10 @@
 use std::time::Duration;
 
-use sea_orm::{
-    DbErr,
-    Database, 
-    ConnectOptions,
-    DatabaseConnection
-};
+use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr};
 
 pub use sea_orm;
 
-use crate::nako::{
-    app,
-    config,
-};
+use crate::nako::{app, config};
 
 // 数据库连接
 pub async fn connect() -> Result<DatabaseConnection, DbErr> {
@@ -40,7 +32,7 @@ pub async fn connect() -> Result<DatabaseConnection, DbErr> {
         .max_lifetime(Duration::from_secs(max_lifetime))
         .sqlx_logging(logging)
         .sqlx_logging_level(logging_level);
-    
+
     let db = Database::connect(opt);
 
     db.await

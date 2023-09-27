@@ -1,14 +1,14 @@
-use std::path::Path;
 use std::ffi::OsStr;
+use std::path::Path;
 
-use crypto::md5::Md5;
-use crypto::sha1::Sha1;
+use crypto::digest::Digest;
 use crypto::hmac::Hmac;
 use crypto::mac::Mac;
-use crypto::digest::Digest;
-use uuid::Uuid;
-use humansize::{format_size, DECIMAL};
+use crypto::md5::Md5;
+use crypto::sha1::Sha1;
 use data_encoding::BASE64;
+use humansize::{format_size, DECIMAL};
+use uuid::Uuid;
 
 use actix_web::HttpRequest;
 
@@ -27,10 +27,7 @@ pub fn sha1(data: &str) -> String {
 }
 
 // sha1
-pub fn hmac_sha1<'a>(
-    data: &'a str, 
-    key: &'a str,
-) -> String {
+pub fn hmac_sha1<'a>(data: &'a str, key: &'a str) -> String {
     let mut hmac = Hmac::new(Sha1::new(), &key.as_bytes());
 
     hmac.input(&data.as_bytes());
@@ -63,9 +60,7 @@ pub fn uuid() -> String {
 }
 
 pub fn get_extension(filename: &str) -> String {
-    let extension = Path::new(filename)
-        .extension()
-        .and_then(OsStr::to_str);
+    let extension = Path::new(filename).extension().and_then(OsStr::to_str);
 
     if let Some(ext) = extension {
         return ext.to_string();
@@ -143,7 +138,7 @@ pub fn str_trim(input: &str) -> String {
 }
 
 /// 生成 url
-pub fn url_for<U, I>(req: HttpRequest, name: &str, elements: U) -> String 
+pub fn url_for<U, I>(req: HttpRequest, name: &str, elements: U) -> String
 where
     U: IntoIterator<Item = I>,
     I: AsRef<str>,
@@ -165,4 +160,3 @@ pub fn url_for_static(req: HttpRequest, name: &str) -> String {
 
     url
 }
-

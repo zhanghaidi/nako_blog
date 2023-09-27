@@ -1,17 +1,11 @@
-use tera::Tera;
 use sea_orm::DatabaseConnection;
+use tera::Tera;
 
 pub use actix_session::Session;
-pub use serde::{
-    Serialize,
-    Deserialize,
-};
 use redis::aio::ConnectionManager;
+pub use serde::{Deserialize, Serialize};
 
-pub use validator::{
-    Validate, 
-    ValidationError,
-};
+pub use validator::{Validate, ValidationError};
 
 #[derive(Clone)]
 pub struct AppState {

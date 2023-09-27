@@ -1,25 +1,10 @@
+use actix_web::{web, Error, HttpResponse, Result};
 use std::collections::HashMap;
-use actix_web::{
-    web, 
-    Error, 
-    Result, 
-    HttpResponse,
-};
 
-use crate::nako::{
-    app,
-    http as nako_http,
-};
-use crate::nako::global::{
-    AppState,
-};
+use crate::nako::global::AppState;
+use crate::nako::{app, http as nako_http};
 
-use crate::app::model::{
-    art,
-    cate,
-    tag,
-    comment,
-};
+use crate::app::model::{art, cate, comment, tag};
 
 /// 详情
 pub async fn index(
@@ -37,20 +22,27 @@ pub async fn index(
 
     // 文章详情
     let art = art::ArtModel::find_by_uuid(db, uuid.as_str())
-        .await.unwrap_or_default().unwrap_or_default();
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
     if art.id == 0 {
         return Ok(app::error_html(&mut view, "文章不存在"));
     }
 
     // 分类
     let cate_data = cate::CateModel::find_by_id(db, art.cate_id)
-        .await.unwrap_or_default().unwrap_or_default();
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
 
     // 回复
-    let (comments, comments_num_pages) = comment::CommentModel::find_in_page_by_artid(db, art.id, page, 6)
-        .await.unwrap_or_default();
+    let (comments, comments_num_pages) =
+        comment::CommentModel::find_in_page_by_artid(db, art.id, page, 6)
+            .await
+            .unwrap_or_default();
     let comments_count = comment::CommentModel::find_count_by_artid(db, art.id)
-        .await.unwrap_or(0);
+        .await
+        .unwrap_or(0);
 
     let mut ctx = nako_http::view_data();
     ctx.insert("art", &art);
@@ -65,14 +57,22 @@ pub async fn index(
         let art_tags = tags_string.split(",").collect::<Vec<&str>>();
         ctx.insert("art_tags", &art_tags);
     }
-  
+
     // 添加阅读量
-    art::ArtModel::view_add(db, art.id, 1).await.unwrap_or_default();
-  
+    art::ArtModel::view_add(db, art.id, 1)
+        .await
+        .unwrap_or_default();
+
     // 右侧数据
-    let hot_arts = art::ArtModel::find_one_year_hot(db, 6).await.unwrap_or_default();
-    let cates = cate::CateModel::find_open_cate(db).await.unwrap_or_default();
-    let tags = tag::TagModel::find_open_tags(db, 6).await.unwrap_or_default();
+    let hot_arts = art::ArtModel::find_one_year_hot(db, 6)
+        .await
+        .unwrap_or_default();
+    let cates = cate::CateModel::find_open_cate(db)
+        .await
+        .unwrap_or_default();
+    let tags = tag::TagModel::find_open_tags(db, 6)
+        .await
+        .unwrap_or_default();
 
     ctx.insert("hot_arts", &hot_arts);
     ctx.insert("cates", &cates);
@@ -83,6 +83,9 @@ pub async fn index(
         tpl = "view.html";
     }
 
-    Ok(nako_http::view(&mut view, app::view_path(tpl).as_str(), &ctx))
+    Ok(nako_http::view(
+        &mut view,
+        app::view_path(tpl).as_str(),
+        &ctx,
+    ))
 }
-
